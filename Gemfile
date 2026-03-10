@@ -17,7 +17,7 @@ gem "solid_cache"
 # Handles things like sending emails, cleaning up expired tokens, expiring missed calls.
 # Alternative was Solid Queue (PostgreSQL-backed) but it doesn't match Sidekiq's
 # throughput at scale — Sidekiq can process millions of jobs/day on a single worker.
-gem "sidekiq", "~> 7.0"
+gem "sidekiq", "~> 8.1"
 
 # ─── Real-time / WebSockets ───────────────────────────────────────────────────
 # Action Cable is built into Rails — no gem needed.
