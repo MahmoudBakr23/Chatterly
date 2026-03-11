@@ -1,0 +1,33 @@
+development:
+  # Async adapter = pub/sub runs inside the same Ruby process in memory.
+  # Fine for development (one server, one process, no load balancer).
+  # Would silently break the moment you run more than one Puma worker,
+  # because workers are separate processes that can't share memory.
+  adapter: async
+
+test:
+  adapter: test
+
+production:
+  # Redis adapter = pub/sub goes through Redis as the shared message broker.
+  # Every Rails server (regardless of how many you spin up) publishes and
+  # subscribes through the same Redis instance.
+  # This is what makes horizontal scaling work for WebSockets:
+  #   Server 1 publishes "new message in conversation 5" → Redis
+  #   Redis delivers it to Server 2 and Server 3 simultaneously
+  #   Server 2 pushes to User B's WebSocket, Server 3 pushes to User C's
+  # The Rails servers never talk to each other directly — Redis is the hub.
+  adapter: redis
+
+  # REDIS_URL format: redis://[:password@]host[:port][/db]
+  # For Upstash (free tier): rediss://...  (rediss = Redis over TLS)
+  # The 'rediss' protocol encrypts traffic — required by Upstash, good practice always.
+  url: <%= ENV.fetch("REDIS_URL") { "redis://localhost:6379/0" } %>
+
+  # Redis database number. Redis has 16 logical databases (0–15) on one instance.
+  # We use separate ones to avoid key collisions between Action Cable, Sidekiq, and cache:
+  #   /0 → Action Cable pub/sub (this file)
+  #   /1 → Sidekiq job queue    (config/initializers/sidekiq.rb)
+  #   /2 → Rails cache          (config/environments/production.rb)
+  #   /3 → JWT denylist + presence (our custom Redis usage)
+  channel_prefix: chatterly_production

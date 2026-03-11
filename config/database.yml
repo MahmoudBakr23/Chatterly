@@ -1,0 +1,78 @@
+default: &default
+  adapter: postgresql
+  encoding: unicode
+
+  # ─── CONNECTION POOL ────────────────────────────────────────────────────────
+  # pool = how many DB connections each Puma WORKER process can open.
+  # Must equal RAILS_MAX_THREADS exactly (see puma.rb for the why).
+  # Formula: pool × workers × servers = total connections hitting PgBouncer.
+  # PgBouncer then collapses that number down to a small set of real PostgreSQL
+  # connections — so PostgreSQL never sees the full load.
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS", 3) %>
+
+  # ─── PGBOUNCER COMPATIBILITY ─────────────────────────────────────────────────
+  # PgBouncer in transaction mode (what Supabase uses) breaks two PostgreSQL
+  # features that Rails enables by default. We turn them off here.
+  #
+  # prepared_statements: Rails sends SQL to PostgreSQL as pre-compiled "prepared
+  # statements" — PostgreSQL caches them per connection for speed. But PgBouncer
+  # rotates connections between clients, so those cached plans become invalid
+  # and cause errors. Setting false makes Rails send raw SQL every time instead.
+  #
+  # advisory_locks: PostgreSQL-level locks Rails uses for migrations. They are
+  # tied to a specific connection — PgBouncer's connection rotation makes them
+  # unreliable. Setting false disables them (we handle migration safety ourselves).
+  prepared_statements: false
+  advisory_locks: false
+
+  # Connect via TCP — required for PgBouncer (which is a TCP proxy).
+  # Unix socket connections bypass PgBouncer entirely.
+  host: <%= ENV.fetch("DB_HOST", "localhost") %>
+  port: <%= ENV.fetch("DB_PORT", 5432) %>
+
+development:
+  <<: *default
+  database: chatterly_api_development
+  # No username/password needed locally — PostgreSQL trusts local connections.
+  # In production this is replaced by the full DATABASE_URL environment variable.
+
+test:
+  <<: *default
+  database: chatterly_api_test
+
+production:
+  primary: &primary_production
+    <<: *default
+    # DATABASE_URL format for Supabase with PgBouncer:
+    # postgresql://[user]:[password]@[host]:6543/[dbname]?pgbouncer=true
+    #                                         ^^^^
+    #                                         Port 6543 = PgBouncer (not 5432 = direct PostgreSQL)
+    #                                         ?pgbouncer=true tells the pg gem to expect
+    #                                         a pooler and not to use prepared statements
+    #
+    # Rails automatically reads DATABASE_URL and merges it with this config.
+    # Never hardcode credentials here — they live in environment variables only.
+    url: <%= ENV["DATABASE_URL"] %>
+
+    # ─── READ REPLICA (horizontal scaling for reads) ─────────────────────────
+    # At scale, reads (SELECT) vastly outnumber writes (INSERT/UPDATE/DELETE).
+    # A read replica is a real-time copy of your primary PostgreSQL database
+    # that handles SELECT queries — taking load off the primary, which focuses
+    # on writes only.
+    #
+    # Supabase provides a read replica on paid plans.
+    # When DATABASE_REPLICA_URL is set, Rails automatically routes:
+    #   - SELECT queries → replica
+    #   - INSERT/UPDATE/DELETE → primary
+    # When it's not set (free tier), all queries go to primary. Zero code change.
+    replica:
+      <<: *primary_production
+      url: <%= ENV["DATABASE_REPLICA_URL"] %>
+      replica: true   # tells ActiveRecord this is read-only
+
+  # Solid Cache uses a separate database so cache churn (constant writes/deletes)
+  # doesn't compete with application data on the same PostgreSQL connection pool.
+  cache:
+    <<: *primary_production
+    url: <%= ENV["CACHE_DATABASE_URL"] %>
+    migrations_paths: db/cache_migrate
