@@ -21,7 +21,7 @@ Devise.setup do |config|
 
   # ─── Auth key ───────────────────────────────────────────────────────────────
   # The field Devise uses to find the user on login. Email is the default.
-  config.authentication_keys = [:email]
+  config.authentication_keys = [ :email ]
 
   # ─── Password ───────────────────────────────────────────────────────────────
   config.password_length = 8..128
@@ -60,14 +60,14 @@ Devise.setup do |config|
     # After successful POST to /api/v1/auth/login, devise-jwt generates
     # a token and adds it to the Authorization response header.
     jwt.dispatch_requests = [
-      ["POST", %r{^/api/v1/auth/login$}]
+      [ "POST", %r{^/api/v1/auth/login$} ]
     ]
 
     # revocation_requests: which endpoints trigger JWT revocation (logout)
     # After DELETE to /api/v1/auth/logout, the token's JTI is stored in Redis
     # with a TTL matching the token's remaining lifetime — auto-expires.
     jwt.revocation_requests = [
-      ["DELETE", %r{^/api/v1/auth/logout$}]
+      [ "DELETE", %r{^/api/v1/auth/logout$} ]
     ]
 
     # Token lifetime — 24 hours balances UX and security.

@@ -37,7 +37,7 @@ class CreateCallSessions < ActiveRecord::Migration[8.1]
     # Index for "is there an active call in this conversation?" query
     # Runs when a user opens a conversation that might have an ongoing call
     # TODO: add_index :call_sessions, [:conversation_id, :status]
-    add_index :call_sessions, [:conversation_id, :status]
+    add_index :call_sessions, [ :conversation_id, :status ]
     # check line 6: The conversation_id is not indexed because the composite index is already created here,
     # and the leftmost column is already the conversation_id.
   end

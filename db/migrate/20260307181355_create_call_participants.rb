@@ -21,6 +21,6 @@ class CreateCallParticipants < ActiveRecord::Migration[8.1]
 
     # Prevent a user from appearing twice in the same call
     # TODO: add_index :call_participants, [:call_session_id, :user_id], unique: true
-    add_index :call_participants, [:call_session_id, :user_id], unique: true
+    add_index :call_participants, [ :call_session_id, :user_id ], unique: true
   end
 end
