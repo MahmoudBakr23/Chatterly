@@ -30,6 +30,11 @@ class User < ApplicationRecord
   # TODO: has_many :reactions, dependent: :destroy
   has_many :conversation_members, dependent: :destroy
   has_many :conversations, through: :conversation_members
+  # created_conversations: all conversations this user created (created_by_id FK).
+  # dependent: :nullify — when the user is deleted, set created_by_id to NULL and keep
+  # the conversation alive. Other members and messages are unaffected.
+  has_many :created_conversations, class_name: "Conversation",
+                                   foreign_key: :created_by_id, dependent: :nullify
   has_many :messages, dependent: :destroy
   has_many :reactions, dependent: :destroy
 
@@ -60,11 +65,11 @@ class User < ApplicationRecord
   # TODO: validates :display_name, length: { maximum: 50 }, allow_blank: true
   validates :display_name, length: { maximum: 50 }, allow_blank: true
   # ─── Callbacks ──────────────────────────────────────────────────────────────
-  # Normalize username to lowercase before saving.
-  # Doing this in a callback (not just validation) ensures it's always stored
-  # lowercase regardless of how it was submitted — consistent in the DB.
-  # TODO: before_save :downcase_username
-  before_save :downcase_username
+  # Normalize username to lowercase BEFORE validation, not before_save.
+  # before_save fires after validation — so 'DAVE' would fail the regex check first.
+  # before_validation fires before validation runs, so the value is already
+  # downcased by the time the format regex check sees it.
+  before_validation :downcase_username
   # ─── Scopes ─────────────────────────────────────────────────────────────────
   # Scopes are reusable query fragments. They return an ActiveRecord::Relation
   # so they can be chained: User.online.where(...)

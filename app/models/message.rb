@@ -20,7 +20,7 @@ class Message < ApplicationRecord
   # TODO: validates :body, presence: true, length: { maximum: 4000 }
   # TODO: validates :conversation_id, presence: true
   # TODO: validates :user_id, presence: true
-  validates :body, presence: true, length: { maximum: 4000 }
+  validates :content, presence: true, length: { maximum: 4000 }
   validates :conversation_id, presence: true
   validates :user_id, presence: true
   # ─── Scopes ─────────────────────────────────────────────────────────────────
