@@ -32,6 +32,6 @@ class CreateConversationMembers < ActiveRecord::Migration[8.1]
     # speeds up the query "is user X a member of conversation Y?" which
     # runs on EVERY authenticated request to conversation endpoints.
     # TODO: add_index :conversation_members, [:conversation_id, :user_id], unique: true
-    add_index :conversation_members, [:conversation_id, :user_id], unique: true
+    add_index :conversation_members, [ :conversation_id, :user_id ], unique: true
   end
 end
