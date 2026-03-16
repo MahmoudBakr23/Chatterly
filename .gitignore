@@ -4,9 +4,6 @@
 # belong in git's global ignore instead:
 # `$XDG_CONFIG_HOME/git/ignore` or `~/.config/git/ignore`
 
-# Ignore Claude Code project instructions (dev-only).
-/CLAUDE.md
-
 # Ignore bundler config.
 /.bundle
 
