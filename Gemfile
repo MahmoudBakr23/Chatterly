@@ -28,7 +28,7 @@ gem "sidekiq", "~> 7.0"
 gem "redis", "~> 5.0"
 
 # ─── Auth ─────────────────────────────────────────────────────────────────────
-gem "devise", "~> 4.9"        # Full auth: registration, login, bcrypt password hashing
+gem "devise", "~> 5.0"        # Full auth: registration, login, bcrypt password hashing
 gem "devise-jwt", "~> 0.12"   # JWT token strategy on top of Devise (stateless API auth)
 
 # ─── API ──────────────────────────────────────────────────────────────────────
