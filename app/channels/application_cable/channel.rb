@@ -11,7 +11,6 @@ module ApplicationCable
     #     rate_limit!(action: "message", limit: 20, window: 10)
     #     ...
     #   end
-    #
     # How it works:
     #   Redis key: "rate_limit:<action>:<user_id>"
     #   On each call: INCR the key (atomic, thread-safe).
@@ -31,10 +30,25 @@ module ApplicationCable
     #           throw :abort
     #         end
     #       end
-
+    def rate_limit!(action:, limit:, window:)
+      key   = "rate_limit:#{action}:#{current_user.id}"
+      count = redis.incr(key)
+      # Set TTL only on first increment — don't reset the window on each hit
+      redis.expire(key, window) if count == 1
+      if count > limit
+        transmit({ error: "rate_limit", message: "Too many #{action} requests. Slow down." })
+        throw :abort
+      end
+    end
     # Shared Redis connection for all channels (logical DB /3 — same as JWT + presence).
     # TODO: def redis
     #         @redis ||= Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/3"))
     #       end
+    def redis
+      @redis ||= Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/3"))
+      # A: No — in staging/production, REDIS_URL is set to the Upstash URL (e.g. rediss://...@...upstash.io:6379).
+      #    ENV.fetch raises KeyError if the var is missing entirely, so deployment will fail fast rather than
+      #    silently connecting to localhost (which wouldn't exist on Railway/Render anyway).
+    end
   end
 end

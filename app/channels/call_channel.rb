@@ -19,12 +19,18 @@ class CallChannel < ApplicationCable::Channel
   #         return reject unless call && participant?(call)
   #         stream_from "call_#{call.id}"
   #       end
-
+  def subscribed
+    call = CallSession.find_by(id: params[:call_session_id])
+    return reject unless call && participant?(call)
+    stream_from "call_#{call.id}"
+  end
   # ─── Unsubscribed ───────────────────────────────────────────────────────────
   # TODO: def unsubscribed
   #         stop_all_streams
   #       end
-
+  def unsubscribed
+    stop_all_streams
+  end
   # ─── offer ──────────────────────────────────────────────────────────────────
   # Caller sends their SDP offer to the callee via the server.
   # data: { call_session_id:, sdp: <offer> }
@@ -36,7 +42,13 @@ class CallChannel < ApplicationCable::Channel
   #           from: current_user.id
   #         })
   #       end
-
+  def offer(data)
+    ActionCable.server.broadcast("call_#{data['call_session_id']}", {
+      type: "offer",
+      sdp: data["sdp"],
+      from: current_user.id
+    })
+  end
   # ─── answer ─────────────────────────────────────────────────────────────────
   # Callee responds with their SDP answer — completes the capability negotiation.
   # data: { call_session_id:, sdp: <answer> }
@@ -47,7 +59,13 @@ class CallChannel < ApplicationCable::Channel
   #           from: current_user.id
   #         })
   #       end
-
+  def answer(data)
+    ActionCable.server.broadcast("call_#{data['call_session_id']}", {
+      type: "answer",
+      sdp: data["sdp"],
+      from: current_user.id
+    })
+  end
   # ─── ice_candidate ──────────────────────────────────────────────────────────
   # Both peers continuously send ICE candidates as they discover network paths.
   # The other peer tries each candidate until a direct connection is established.
@@ -59,6 +77,13 @@ class CallChannel < ApplicationCable::Channel
   #           from: current_user.id
   #         })
   #       end
+  def ice_candidate(data)
+    ActionCable.server.broadcast("call_#{data['call_session_id']}", {
+      type: "ice_candidate",
+      candidate: data["candidate"],
+      from: current_user.id
+    })
+  end
 
   private
 
@@ -67,4 +92,8 @@ class CallChannel < ApplicationCable::Channel
   #         call.participants.exists?(current_user.id) ||
   #           call.initiator_id == current_user.id
   #       end
+  def participant?(call)
+    call.participants.exists?(current_user.id) ||
+      call.initiator_id == current_user.id
+  end
 end

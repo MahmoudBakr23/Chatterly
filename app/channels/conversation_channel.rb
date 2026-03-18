@@ -21,13 +21,20 @@ class ConversationChannel < ApplicationCable::Channel
   #         return reject unless conversation && member?(conversation)
   #         stream_from "conversation_#{conversation.id}"
   #       end
-
+  def subscribed
+    conversation = Conversation.find_by(id: params[:conversation_id])
+    return reject unless conversation && member?(conversation)
+    stream_from "conversation_#{conversation.id}"
+  end
   # ─── Unsubscribed ───────────────────────────────────────────────────────────
   # Called when the client unsubscribes or disconnects.
   # stop_all_streams cleans up Redis subscriptions for this channel instance.
   # TODO: def unsubscribed
   #         stop_all_streams
   #       end
+  def unsubscribed
+    stop_all_streams
+  end
 
   private
 
@@ -36,4 +43,7 @@ class ConversationChannel < ApplicationCable::Channel
   # TODO: def member?(conversation)
   #         conversation.members.exists?(current_user.id)
   #       end
+  def member?(conversation)
+    conversation.members.exists?(current_user.id)
+  end
 end
