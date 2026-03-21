@@ -12,6 +12,9 @@ module Api
       #         render json: UserBlueprint.render(users, view: :public)
       #       end
       def index
+        users = User.where("username ILIKE :q OR display_name ILIKE :q",
+                            q: "%#{params[:search]}%")
+        render json: UserBlueprint.render(users, view: :public)
       end
 
       # ─── me ─────────────────────────────────────────────────────────────────

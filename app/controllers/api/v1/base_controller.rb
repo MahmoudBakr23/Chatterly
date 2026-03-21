@@ -19,6 +19,17 @@ module Api
       # verifies signature + expiry + denylist, and sets current_user.
       # If anything fails → 401 Unauthorized (Devise handles the response).
       before_action :authenticate_user!
+      # Q: How and where the expiry + denylist are being checked here in this layer?
+      # A: authenticate_user! triggers the devise-jwt Warden strategy, which runs this chain:
+      #      1. Extracts the raw token from the Authorization: Bearer <token> header
+      #      2. JWT.decode — verifies the HS256 signature using secret_key_base
+      #                     and checks the exp claim → raises JWT::ExpiredSignature if past
+      #      3. JwtDenylist.jwt_revoked?(payload, user) — does Redis.exists?("jwt_denylist:<jti>")
+      #                     → true if the token was logged out → treated as invalid
+      #      4. User.find(payload["sub"]) — loads current_user from the DB
+      #    All of this happens inside the devise-jwt gem (lib/devise/jwt/strategy.rb),
+      #    invisible to our code. If any step fails, Warden calls authenticate_user!
+      #    which renders 401 before our controller action ever runs.
     end
   end
 end
