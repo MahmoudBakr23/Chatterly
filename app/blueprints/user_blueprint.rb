@@ -22,6 +22,12 @@ class UserBlueprint < Blueprinter::Base
     redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/3"))
     redis.exists?("presence:#{user.id}")
   end
+  # ─── :public view ─────────────────────────────────────────────────────────
+  # Explicitly declared so Blueprinter doesn't raise on view: :public.
+  # Empty block — inherits all default fields, no additions or exclusions.
+  view :public do
+  end
+
   # ─── :with_email view ─────────────────────────────────────────────────────
   # Used in /users/me, login response, and registration response.
   # Includes all default fields plus private fields.

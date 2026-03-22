@@ -1,6 +1,7 @@
 module Api
   module V1
     class UsersController < BaseController
+      before_action :set_user, only: %i[show update]
       # ─── index ──────────────────────────────────────────────────────────────
       # GET /api/v1/users?search=alice
       # Returns users matching the search query.
@@ -39,6 +40,7 @@ module Api
       #         render json: UserBlueprint.render(user, view: :public)
       #       end
       def show
+        render json: UserBlueprint.render(@user, view: :public)
       end
 
       # ─── update ─────────────────────────────────────────────────────────────
@@ -56,6 +58,12 @@ module Api
       #         end
       #       end
       def update
+        authorize @user
+        if @user.update(user_params)
+          render json: UserBlueprint.render(@user, view: :with_email)
+        else
+          render json: { errors: @user.errors.full_messages }, status: :unprocessable_entity
+        end
       end
 
       private
@@ -67,6 +75,11 @@ module Api
       #         params.require(:user).permit(:display_name, :avatar_url)
       #       end
       def user_params
+        params.require(:user).permit(:display_name, :avatar_url)
+      end
+
+      def set_user
+        @user = User.find(params[:id])
       end
     end
   end
