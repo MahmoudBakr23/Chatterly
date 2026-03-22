@@ -26,6 +26,7 @@ module Api
       #         render json: UserBlueprint.render(current_user, view: :with_email)
       #       end
       def me
+        render json: UserBlueprint.render(current_user, view: :with_email)
       end
 
       # ─── show ───────────────────────────────────────────────────────────────

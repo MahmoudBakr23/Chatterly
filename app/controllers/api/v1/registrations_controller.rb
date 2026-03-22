@@ -16,7 +16,16 @@ module Api
     class RegistrationsController < Devise::RegistrationsController
       respond_to :json
 
+      # Permit extra sign-up params that Devise doesn't know about by default.
+      # Without this, username and display_name are stripped before the User is built,
+      # causing blank username validation failures.
+      before_action :configure_sign_up_params, only: [ :create ]
+
       private
+
+      def configure_sign_up_params
+        devise_parameter_sanitizer.permit(:sign_up, keys: [ :username, :display_name ])
+      end
 
       # Called by Devise after create — resource is the new User.
       # resource.persisted? is true if save succeeded, false if validation failed.
@@ -33,6 +42,14 @@ module Api
       #         end
       #       end
       def respond_with(resource, _opts = {})
+        if resource.persisted?
+          render json: {
+            message: "Registered successfully",
+            user: UserBlueprint.render_as_hash(resource, view: :with_email)
+          }, status: :created
+        else
+          render json: { errors: resource.errors.full_messages }, status: :unprocessable_entity
+        end
       end
     end
   end

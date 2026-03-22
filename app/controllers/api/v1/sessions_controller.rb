@@ -24,6 +24,7 @@ module Api
       #         render json: { user: UserBlueprint.render_as_hash(resource, view: :with_email) }
       #       end
       def respond_with(resource, _opts = {})
+        render json: { user: UserBlueprint.render_as_hash(resource, view: :with_email) }
       end
 
       # respond_to_on_destroy is called after logout.
@@ -33,6 +34,7 @@ module Api
       #         render json: { message: "Logged out successfully" }
       #       end
       def respond_to_on_destroy
+        render json: { message: "Logged out successfully" }
       end
     end
   end

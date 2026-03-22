@@ -40,5 +40,13 @@ module ChatterlyApi
     # Middleware like session, flash, cookies can be added back manually.
     # Skip views, helpers and assets when generating a new resource.
     config.api_only = true
+
+    # Devise/Warden internally calls set_user after sign-in, which tries to
+    # serialize the user into the session — even in JWT mode. Without a session
+    # store Rails API mode raises DisabledSessionError. We add the cookie +
+    # session middleware back as a shim; the session is never actually used for
+    # auth (JWT handles that entirely).
+    config.middleware.use ActionDispatch::Cookies
+    config.middleware.use ActionDispatch::Session::CookieStore, key: "_chatterly_session"
   end
 end
