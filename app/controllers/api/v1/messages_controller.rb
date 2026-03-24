@@ -20,6 +20,10 @@ module Api
       #         render json: MessageBlueprint.render(messages.reverse)
       #       end
       def index
+        messages = @conversation.messages.visible.includes(:user, :reactions).order(created_at: :desc)
+        messages = messages.where("id < ?", params[:before_id]) if params[:before_id]
+        messages = messages.limit(params.fetch(:limit, 50))
+        render json: MessageBlueprint.render(messages.reverse)
       end
 
       # ─── create ─────────────────────────────────────────────────────────────
@@ -42,6 +46,18 @@ module Api
       #         end
       #       end
       def create
+        message = @conversation.messages.build(message_params.merge(user: current_user))
+        authorize message
+        if message.save
+          ActionCable.server.broadcast(
+            "conversation_#{@conversation.id}",
+            { type: "new_message", message: MessageBlueprint.render_as_hash(message) }
+          )
+          render json: MessageBlueprint.render(message), status: :created
+        else
+          render json: { errors: message.errors.full_messages },
+                  status: :unprocessable_entity
+        end
       end
 
       # ─── update ─────────────────────────────────────────────────────────────
@@ -63,6 +79,18 @@ module Api
       #         end
       #       end
       def update
+        message = @conversation.messages.find(params[:id])
+        authorize message
+        if message.update(message_params.merge(edited_at: Time.current))
+          ActionCable.server.broadcast(
+            "conversation_#{@conversation.id}",
+            { type: "message_edited", message: MessageBlueprint.render_as_hash(message) }
+          )
+          render json: MessageBlueprint.render(message)
+        else
+          render json: { errors: message.errors.full_messages },
+                  status: :unprocessable_entity
+        end
       end
 
       # ─── destroy ────────────────────────────────────────────────────────────
@@ -83,6 +111,14 @@ module Api
       #         render json: { message: "Message deleted" }
       #       end
       def destroy
+        message = @conversation.messages.find(params[:id])
+        authorize message
+        message.soft_delete!
+        ActionCable.server.broadcast(
+          "conversation_#{@conversation.id}",
+          { type: "message_deleted", message_id: message.id }
+        )
+        render json: { message: "Message deleted" }
       end
 
       private
@@ -95,12 +131,14 @@ module Api
       #         @conversation = current_user.conversations.find(params[:conversation_id])
       #       end
       def set_conversation
+        @conversation = current_user.conversations.find(params[:conversation_id])
       end
 
       # TODO: def message_params
       #         params.require(:message).permit(:content, :message_type, :parent_message_id)
       #       end
       def message_params
+        params.require(:message).permit(:content, :message_type, :parent_message_id)
       end
     end
   end

@@ -26,6 +26,18 @@ module Api
       #         end
       #       end
       def create
+        authorize @conversation, :manage_members?
+        user = User.find(params[:user_id])
+        membership = @conversation.conversation_members.build(user: user)
+        if membership.save
+          ActionCable.server.broadcast(
+            "conversation_#{@conversation.id}",
+            { type: "member_joined", user: UserBlueprint.render_as_hash(user, view: :public) }
+          )
+          render json: { message: "Member added" }, status: :created
+        else
+          render json: { errors: membership.errors.full_messages }, status: :unprocessable_entity
+        end
       end
 
       # ─── destroy ────────────────────────────────────────────────────────────
@@ -44,6 +56,14 @@ module Api
       #         render json: { message: "Left conversation" }
       #       end
       def destroy
+        membership = @conversation.conversation_members.find_by!(user_id: params[:id])
+        authorize @conversation, :manage_members? unless membership.user_id == current_user.id
+        membership.destroy
+        ActionCable.server.broadcast(
+          "conversation_#{@conversation.id}",
+          { type: "member_left", user_id: membership.user_id }
+        )
+        render json: { message: "Left conversation" }
       end
 
       private
@@ -52,6 +72,7 @@ module Api
       #         @conversation = current_user.conversations.find(params[:conversation_id])
       #       end
       def set_conversation
+        @conversation = current_user.conversations.find(params[:conversation_id])
       end
     end
   end
