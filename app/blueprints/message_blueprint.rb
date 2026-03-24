@@ -11,10 +11,17 @@ class MessageBlueprint < Blueprinter::Base
   #   extra HTTP call (N+1 at the API level). Bundling them is cheaper.
   #
   # TODO: fields :content, :message_type, :edited_at, :created_at, :parent_message_id
+  fields :content, :message_type, :edited_at, :created_at, :parent_message_id
   # TODO: field :user do |message|
   #         UserBlueprint.render_as_hash(message.user, view: :public)
   #       end
+  field :user do |message|
+    UserBlueprint.render_as_hash(message.user, view: :public)
+  end
   # TODO: field :reactions do |message|
   #         ReactionBlueprint.render_as_hash(message.reactions)
   #       end
+  field :reactions do |message|
+    ReactionBlueprint.render_as_hash(message.reactions)
+  end
 end

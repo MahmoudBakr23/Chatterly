@@ -7,10 +7,13 @@ class ConversationBlueprint < Blueprinter::Base
   # subquery. For now, a direct count is fine (optimize later with counter_cache).
   #
   # TODO: fields :name, :description, :conversation_type, :created_by_id, :created_at
+  fields :name, :description, :conversation_type, :created_by_id, :created_at
   # TODO: field :member_count do |conversation|
   #         conversation.members.count
   #       end
-
+  field :member_count do |conversation|
+    conversation.members.count
+  end
   # ─── :with_members view ───────────────────────────────────────────────────
   # Used in GET /conversations/:id (show) and after create.
   # Nests the full member list — each member rendered via UserBlueprint :public.
@@ -23,4 +26,9 @@ class ConversationBlueprint < Blueprinter::Base
   #           UserBlueprint.render_as_hash(conversation.members, view: :public)
   #         end
   #       end
+  view :with_members do
+    field :members do |conversation|
+      UserBlueprint.render_as_hash(conversation.members, view: :public)
+    end
+  end
 end
