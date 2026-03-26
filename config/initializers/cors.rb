@@ -33,6 +33,6 @@ Rails.application.config.middleware.insert_before 0, Rack::Cors do
       # expose: tells the browser which response headers JavaScript is allowed to read.
       # Authorization must be exposed because devise-jwt returns the JWT token
       # in the response header after login/register — our frontend reads it from there.
-      expose: ["Authorization"]
+      expose: [ "Authorization" ]
   end
 end

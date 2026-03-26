@@ -23,7 +23,11 @@ class JwtDenylist
   #           url: ENV.fetch("REDIS_URL", "redis://localhost:6379/3")
   #         )
   #       end
-
+  def self.redis
+    @redis ||= Redis.new(
+      url: ENV.fetch("REDIS_URL", "redis://localhost:6379/3")
+    )
+  end
   # ─── devise-jwt interface ─────────────────────────────────────────────────
   # jwt_revoked? is called on EVERY authenticated request.
   # payload contains: { "sub" => user_id, "jti" => unique_token_id, "exp" => expiry }
@@ -31,6 +35,14 @@ class JwtDenylist
   # TODO: def self.jwt_revoked?(payload, _user)
   #         redis.exists?("jwt_denylist:#{payload['jti']}")
   #       end
+  def self.jwt_revoked?(payload, _user)
+    redis.exists?("jwt_denylist:#{payload['jti']}")
+  end
+  # What's this _user for? Explain it.
+  # [Claude] _user is the User object devise-jwt passes in — the currently authenticated user.
+  # The underscore prefix is a Ruby convention meaning "I'm receiving this argument but intentionally not using it."
+  # We don't need the user here because the JTI alone is enough to identify and revoke the specific token.
+  # The interface signature is fixed by devise-jwt — you must accept both arguments whether you use them or not.
 
   # revoke_jwt is called once on logout.
   # We store the jti with a TTL equal to the token's remaining lifetime.
@@ -43,4 +55,10 @@ class JwtDenylist
   #         remaining_ttl = expiry - Time.now.to_i
   #         redis.setex("jwt_denylist:#{jti}", remaining_ttl, "1") if remaining_ttl.positive?
   #       end
+  def self.revoke_jwt(payload, _user)
+    jti = payload["jti"]
+    expiry = payload["exp"]
+    remaining_ttl = expiry - Time.now.to_i
+    redis.setex("jwt_denylist:#{jti}", remaining_ttl, "1") if remaining_ttl.positive?
+  end
 end

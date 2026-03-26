@@ -42,6 +42,6 @@ class CreateReactions < ActiveRecord::Migration[8.1]
     # Composite unique index enforces this at the DB level.
     # The model also validates this, but the DB index is the race-condition guard.
     # TODO: add_index :reactions, [:message_id, :user_id, :emoji], unique: true
-    add_index :reactions, [:message_id, :user_id, :emoji], unique: true
+    add_index :reactions, [ :message_id, :user_id, :emoji ], unique: true
   end
 end

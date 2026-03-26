@@ -58,7 +58,7 @@ class DeviseCreateUsers < ActiveRecord::Migration[8.1]
     add_index :users, :email,                unique: true
     add_index :users, :reset_password_token, unique: true
     add_index :users, :unlock_token, unique: true
-    
+
     # TODO: add a unique index on :username
     # Case-insensitive uniqueness is handled at the model level (validates :username,
     # uniqueness: { case_sensitive: false }) but the DB index is case-sensitive.
