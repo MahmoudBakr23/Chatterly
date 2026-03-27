@@ -40,11 +40,17 @@ Rails.application.routes.draw do
         resources :messages, only: [ :index, :create, :update, :destroy ]
 
         # ── Calls ──────────────────────────────────────────────────────────
-        # POST   /api/v1/conversations/:conversation_id/calls           (initiate)
-        # GET    /api/v1/conversations/:conversation_id/calls/active    (join late)
-        # DELETE /api/v1/conversations/:conversation_id/calls/:id       (end call)
+        # POST   /api/v1/conversations/:conversation_id/calls              (initiate)
+        # GET    /api/v1/conversations/:conversation_id/calls/active       (join late)
+        # PUT    /api/v1/conversations/:conversation_id/calls/:id/accept   (callee accepts)
+        # PUT    /api/v1/conversations/:conversation_id/calls/:id/decline  (callee declines)
+        # DELETE /api/v1/conversations/:conversation_id/calls/:id          (initiator ends)
         resources :call_sessions, only: [ :create, :destroy ], path: "calls" do
           collection { get :active }
+          member do
+            put :accept
+            put :decline
+          end
         end
       end
 

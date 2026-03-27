@@ -36,6 +36,62 @@ module Api
         end
       end
 
+      # ─── accept ─────────────────────────────────────────────────────────────
+      # PUT /api/v1/conversations/:conversation_id/calls/:id/accept
+      #
+      # The callee accepts the incoming call. Three things happen:
+      #   1. A CallParticipant record is created for current_user (joined_at = now).
+      #   2. The call transitions ringing → active and started_at is stamped.
+      #   3. A call_accepted event is broadcast to the call stream.
+      #
+      # After this returns 200, the frontend can safely subscribe to CallChannel
+      # because participant?(call) now passes for this user. The initiator then
+      # sends the WebRTC SDP offer over that channel to complete the handshake.
+      #
+      # find_or_create_by! guards against double-tapping Accept without raising —
+      # the DB unique index on [call_session_id, user_id] is the final safety net.
+      def accept
+        call = @conversation.call_sessions.find(params[:id])
+        authorize call
+
+        CallParticipant.find_or_create_by!(call_session: call, user: current_user)
+
+        # Stamp started_at only once — in a group call a second participant
+        # accepting should not overwrite the timestamp set by the first.
+        call.update!(status: :active, started_at: call.started_at || Time.current)
+
+        ActionCable.server.broadcast("call_#{call.id}", {
+          type: "call_accepted",
+          call_session_id: call.id,
+          accepted_by: UserBlueprint.render_as_hash(current_user, view: :public)
+        })
+
+        render json: CallSessionBlueprint.render(call)
+      end
+
+      # ─── decline ────────────────────────────────────────────────────────────
+      # PUT /api/v1/conversations/:conversation_id/calls/:id/decline
+      #
+      # The callee rejects the incoming call. Broadcasts to two streams:
+      #   - "call_<id>"           → wakes the initiator's CallChannel subscription
+      #   - "conversation_<id>"   → dismisses the ringing banner for all members
+      def decline
+        call = @conversation.call_sessions.find(params[:id])
+        authorize call
+
+        call.update!(status: :declined)
+
+        payload = {
+          type: "call_declined",
+          call_session_id: call.id,
+          declined_by: UserBlueprint.render_as_hash(current_user, view: :public)
+        }
+        ActionCable.server.broadcast("call_#{call.id}", payload)
+        ActionCable.server.broadcast("conversation_#{@conversation.id}", payload)
+
+        render json: { message: "Call declined" }
+      end
+
       # ─── active ─────────────────────────────────────────────────────────────
       # GET /api/v1/conversations/:conversation_id/calls/active
       # Returns the currently active call, if any.
