@@ -29,6 +29,9 @@ module Api
         )
         authorize call
         if call.save
+          # Add the initiator as a participant immediately so CallChannel#subscribed
+          # passes the participant? guard for them from the moment the call exists.
+          CallParticipant.create!(call_session: call, user: current_user)
           broadcast_incoming_call(call)
           render json: CallSessionBlueprint.render(call), status: :created
         else
@@ -54,11 +57,16 @@ module Api
         call = @conversation.call_sessions.find(params[:id])
         authorize call
 
-        unless call.ringing?
-          return render json: { error: "Call is no longer ringing" }, status: :unprocessable_entity
-        end
+        # with_lock acquires a row-level advisory lock (SELECT … FOR UPDATE) so
+        # the guard check + status write are atomic — prevents two concurrent
+        # "accept" requests from both passing the ringing? guard before either
+        # commits (TOCTOU race).
+        call.with_lock do
+          unless call.ringing?
+            return render json: { error: "Call is no longer ringing" }, status: :unprocessable_entity
+          end
 
-        ActiveRecord::Base.transaction do
+
           CallParticipant.find_or_create_by!(call_session: call, user: current_user)
 
           # Stamp started_at only once — in a group call a second participant
@@ -85,11 +93,15 @@ module Api
         call = @conversation.call_sessions.find(params[:id])
         authorize call
 
-        unless call.ringing?
-          return render json: { error: "Call is no longer ringing" }, status: :unprocessable_entity
-        end
+        # Same TOCTOU guard as accept — lock the row so two concurrent decline
+        # requests cannot both pass the ringing? check before either commits.
+        call.with_lock do
+          unless call.ringing?
+            return render json: { error: "Call is no longer ringing" }, status: :unprocessable_entity
+          end
 
-        call.update!(status: :declined)
+          call.update!(status: :declined)
+        end
 
         payload = {
           type: "call_declined",
@@ -99,7 +111,7 @@ module Api
         ActionCable.server.broadcast("call_#{call.id}", payload)
         ActionCable.server.broadcast("conversation_#{@conversation.id}", payload)
 
-        render json: { message: "Call declined" }
+        render json: CallSessionBlueprint.render(call)
       end
 
       # ─── active ─────────────────────────────────────────────────────────────
