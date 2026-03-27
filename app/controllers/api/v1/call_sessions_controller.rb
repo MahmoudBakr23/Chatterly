@@ -54,11 +54,17 @@ module Api
         call = @conversation.call_sessions.find(params[:id])
         authorize call
 
-        CallParticipant.find_or_create_by!(call_session: call, user: current_user)
+        unless call.ringing?
+          return render json: { error: "Call is no longer ringing" }, status: :unprocessable_entity
+        end
 
-        # Stamp started_at only once — in a group call a second participant
-        # accepting should not overwrite the timestamp set by the first.
-        call.update!(status: :active, started_at: call.started_at || Time.current)
+        ActiveRecord::Base.transaction do
+          CallParticipant.find_or_create_by!(call_session: call, user: current_user)
+
+          # Stamp started_at only once — in a group call a second participant
+          # accepting should not overwrite the timestamp set by the first.
+          call.update!(status: :active, started_at: call.started_at || Time.current)
+        end
 
         ActionCable.server.broadcast("call_#{call.id}", {
           type: "call_accepted",
@@ -78,6 +84,10 @@ module Api
       def decline
         call = @conversation.call_sessions.find(params[:id])
         authorize call
+
+        unless call.ringing?
+          return render json: { error: "Call is no longer ringing" }, status: :unprocessable_entity
+        end
 
         call.update!(status: :declined)
 
