@@ -29,11 +29,11 @@ module Api
         )
         authorize call
         if call.save
-          # Add the initiator as a participant immediately so CallChannel#subscribed
-          # passes the participant? guard for them from the moment the call exists.
+          # Add the initiator as a participant immediately so CallChannel#participant?
+          # passes the guard for them from the moment the call exists.
           CallParticipant.create!(call_session: call, user: current_user)
           broadcast_incoming_call(call)
-          render json: CallSessionBlueprint.render(call), status: :created
+          render json: { data: CallSessionBlueprint.render_as_hash(call) }, status: :created
         else
           render json: { errors: call.errors.full_messages }, status: :unprocessable_entity
         end
@@ -181,17 +181,23 @@ module Api
       #           }
       #         )
       #       end
+      # Broadcasts incoming_call to each OTHER member's personal CallChannel stream.
+      # Personal streams ("calls_user_<id>") are always active for authenticated users
+      # regardless of which page they are on — unlike conversation streams which only
+      # exist while a conversation is open. This guarantees notification delivery.
       def broadcast_incoming_call(call)
-        ActionCable.server.broadcast(
-          "conversation_#{@conversation.id}",
-          {
-            type: "incoming_call",
-            call_session_id: call.id,
-            caller: UserBlueprint.render_as_hash(current_user, view: :public),
-            call_type: call.call_type,
-            conversation_id: @conversation.id
-          }
-        )
+        payload = {
+          type: "incoming_call",
+          call_session_id: call.id,
+          caller: UserBlueprint.render_as_hash(current_user, view: :public),
+          call_type: call.call_type,
+          conversation_id: @conversation.id
+        }
+
+        # pluck avoids loading full User objects — we only need the IDs
+        @conversation.members.where.not(id: current_user.id).pluck(:id).each do |member_id|
+          ActionCable.server.broadcast("calls_user_#{member_id}", payload)
+        end
       end
     end
   end
