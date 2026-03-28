@@ -57,7 +57,7 @@ module Api
         if conversation.save
           conversation.members << current_user
           add_members(conversation)
-          render json: ConversationBlueprint.render(conversation, view: :with_members), status: :created
+          render json: { data: ConversationBlueprint.render_as_hash(conversation, view: :with_members) }, status: :created
         else
           render json: { errors: conversation.errors.full_messages }, status: :unprocessable_entity
         end
