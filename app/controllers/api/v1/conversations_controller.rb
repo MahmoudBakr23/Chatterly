@@ -12,8 +12,8 @@ module Api
       #         render json: ConversationBlueprint.render(conversations)
       #       end
       def index
-        conversations = current_user.conversations
-        render json: ConversationBlueprint.render(conversations)
+        conversations = current_user.conversations.includes(:members)
+        render json: { data: ConversationBlueprint.render_as_hash(conversations, view: :with_members) }
       end
 
       # ─── show ───────────────────────────────────────────────────────────────
