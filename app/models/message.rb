@@ -16,6 +16,9 @@ class Message < ApplicationRecord
   # Messages #2 and #3 are grouped under #1 in the UI as a thread.
   # TODO: has_many :reactions, dependent: :destroy
   has_many :reactions, dependent: :destroy
+  # ─── Enums ──────────────────────────────────────────────────────────────────
+  enum :message_type, { text: 0, image: 1, file: 2 }, scopes: false
+
   # ─── Validations ────────────────────────────────────────────────────────────
   # TODO: validates :body, presence: true, length: { maximum: 4000 }
   # TODO: validates :conversation_id, presence: true

@@ -28,7 +28,7 @@ module Api
       #       end
       def show
         authorize @conversation
-        render json: ConversationBlueprint.render(@conversation, view: :with_members)
+        render json: { data: ConversationBlueprint.render_as_hash(@conversation, view: :with_members) }
       end
 
       # ─── create ─────────────────────────────────────────────────────────────

@@ -1,5 +1,8 @@
 class MessageBlueprint < Blueprinter::Base
-  identifier :id
+  # Messages live in a partitioned table with composite PK (id, created_at).
+  # Calling .id on a partitioned record returns [id, created_at] — we override
+  # to return only the integer id so the frontend receives a plain number.
+  identifier(:id) { |message| message.read_attribute(:id) }
 
   # ─── default view ─────────────────────────────────────────────────────────
   # Used in GET /messages (list), new_message and message_edited WebSocket events.
@@ -10,8 +13,10 @@ class MessageBlueprint < Blueprinter::Base
   #   If reactions were a separate request, each message row would trigger an
   #   extra HTTP call (N+1 at the API level). Bundling them is cheaper.
   #
-  # TODO: fields :content, :message_type, :edited_at, :created_at, :parent_message_id
-  fields :content, :message_type, :edited_at, :created_at, :parent_message_id
+  # message_type is a Rails enum — call the method explicitly so Blueprinter
+  # returns the string ("text") rather than the raw integer (0).
+  fields :content, :edited_at, :created_at, :parent_message_id
+  field(:message_type) { |message| message.message_type }
   # TODO: field :user do |message|
   #         UserBlueprint.render_as_hash(message.user, view: :public)
   #       end
