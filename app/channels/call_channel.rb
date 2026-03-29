@@ -92,6 +92,8 @@ class CallChannel < ApplicationCable::Channel
 
     return unless declined
 
+    CallLogService.create!(call)
+
     ActionCable.server.broadcast(
       "calls_user_#{call.initiator_id}",
       {
@@ -134,13 +136,20 @@ class CallChannel < ApplicationCable::Channel
     call = CallSession.find_by(id: data["call_session_id"])
     return unless call
 
-    call.update!(status: :ended) unless call.ended?
+    unless call.ended?
+      attrs = { status: :ended }
+      attrs[:ended_at] = Time.current if call.started_at.present?
+      call.update!(**attrs)
+      CallLogService.create!(call)
+    end
 
-    # Notify all participants except the one who ended the call
-    participant_ids = call.participants.where.not(id: current_user.id).pluck(:id)
-    # Also notify the initiator if they are not among the CallParticipant records
-    # (e.g. the call was never accepted and the initiator is hanging up)
-    notify_ids = (participant_ids + [ call.initiator_id ]).uniq - [ current_user.id ]
+    # Notify every conversation member who could be showing a ringing modal —
+    # not just CallParticipant records. When the caller cancels before anyone
+    # accepts, no CallParticipant row exists for the callee, so they would never
+    # receive call_ended and the IncomingCallModal would stay open forever.
+    member_ids = call.conversation.members.pluck(:id)
+    participant_ids = call.call_participants.pluck(:user_id)
+    notify_ids = (participant_ids + member_ids).uniq - [ current_user.id ]
 
     notify_ids.each do |user_id|
       ActionCable.server.broadcast(
@@ -194,8 +203,14 @@ class CallChannel < ApplicationCable::Channel
 
   # participant? — true if current_user is a CallParticipant OR the initiator.
   # Used to prevent signal relay from/to unauthorised users.
+  #
+  # Note: we query call_participants directly (the join table) rather than going
+  # through the :participants has_many :through association and calling
+  # exists?(user: current_user) — the latter generates "WHERE users.user = ?"
+  # which is invalid SQL and always silently returns false, causing all
+  # send_signal calls from the recipient to be dropped.
   def participant?(call)
-    call.participants.exists?(user: current_user) ||
+    call.call_participants.exists?(user_id: current_user.id) ||
       call.initiator_id == current_user.id
   end
 end

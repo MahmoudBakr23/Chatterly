@@ -23,6 +23,11 @@ class PresenceChannel < ApplicationCable::Channel
     stream_from "presence"
     set_online
     broadcast_status("online")
+    # Send the current online roster directly to THIS new subscriber only.
+    # Without this, the frontend presence store starts empty and every user
+    # appears offline until their next 30s ping arrives. transmit() sends only
+    # to the current connection — not a broadcast.
+    transmit_initial_roster
   end
   # ─── Unsubscribed ───────────────────────────────────────────────────────────
   # TODO: def unsubscribed
@@ -84,5 +89,18 @@ class PresenceChannel < ApplicationCable::Channel
   #       end
   def redis
     @redis ||= Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/3"))
+  end
+
+  # Scan Redis for all presence:* keys and transmit the user IDs to the new
+  # subscriber so their store is populated immediately on page load.
+  # Uses SCAN (O(N) cursor-based) rather than KEYS (O(N) blocking) — safe in prod.
+  def transmit_initial_roster
+    online_user_ids = []
+    redis.scan_each(match: "presence:*") do |key|
+      # key format: "presence:<user_id>"
+      user_id = key.split(":").last.to_i
+      online_user_ids << user_id
+    end
+    transmit({ type: "initial_presence", online_user_ids: online_user_ids })
   end
 end

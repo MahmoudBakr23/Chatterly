@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_13_201034) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_29_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -62,6 +62,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_13_201034) do
   end
 
   create_table "messages", primary_key: ["id", "created_at"], options: "PARTITION BY RANGE (created_at)", force: :cascade do |t|
+    t.bigint "call_session_id"
     t.text "content", null: false
     t.bigint "conversation_id", null: false
     t.timestamptz "created_at", null: false
@@ -72,12 +73,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_13_201034) do
     t.bigint "parent_message_id"
     t.timestamptz "updated_at", null: false
     t.bigint "user_id", null: false
+    t.index ["call_session_id"], name: "index_messages_on_call_session_id"
     t.index ["conversation_id", "created_at"], name: "index_messages_on_conversation_id_and_created_at"
     t.index ["deleted_at"], name: "index_messages_on_deleted_at", where: "(deleted_at IS NOT NULL)"
     t.index ["parent_message_id"], name: "index_messages_on_parent_message_id"
   end
 
   create_table "messages_2026_03", primary_key: ["id", "created_at"], options: "INHERITS (messages)", force: :cascade do |t|
+    t.bigint "call_session_id"
     t.text "content", null: false
     t.bigint "conversation_id", null: false
     t.timestamptz "created_at", null: false
@@ -88,6 +91,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_13_201034) do
     t.bigint "parent_message_id"
     t.timestamptz "updated_at", null: false
     t.bigint "user_id", null: false
+    t.index ["call_session_id"], name: "messages_2026_03_call_session_id_idx"
     t.index ["conversation_id", "created_at"], name: "messages_2026_03_conversation_id_created_at_idx"
     t.index ["deleted_at"], name: "messages_2026_03_deleted_at_idx", where: "(deleted_at IS NOT NULL)"
     t.index ["parent_message_id"], name: "messages_2026_03_parent_message_id_idx"

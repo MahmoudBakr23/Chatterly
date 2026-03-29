@@ -16,8 +16,14 @@ class Message < ApplicationRecord
   # Messages #2 and #3 are grouped under #1 in the UI as a thread.
   # TODO: has_many :reactions, dependent: :destroy
   has_many :reactions, dependent: :destroy
+  # call_session: present only on call-type messages. The call log message is
+  # attributed to the initiator and carries the session for duration/status/type.
+  # No FK constraint in the DB (partitioned table limitation) — enforced in app.
+  belongs_to :call_session, optional: true
   # ─── Enums ──────────────────────────────────────────────────────────────────
-  enum :message_type, { text: 0, image: 1, file: 2 }, scopes: false
+  # call (3): a system-generated message that logs a call in the conversation feed.
+  # The frontend reads call_session nested data — content field is ignored.
+  enum :message_type, { text: 0, image: 1, file: 2, call: 3 }, scopes: false
 
   # ─── Validations ────────────────────────────────────────────────────────────
   # TODO: validates :body, presence: true, length: { maximum: 4000 }
