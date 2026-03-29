@@ -33,6 +33,8 @@ module Api
           # passes the guard for them from the moment the call exists.
           CallParticipant.create!(call_session: call, user: current_user)
           broadcast_incoming_call(call)
+          # Transition to :missed if nobody answers within 30 seconds.
+          MissedCallJob.set(wait: 30.seconds).perform_later(call.id)
           render json: { data: CallSessionBlueprint.render_as_hash(call) }, status: :created
         else
           render json: { errors: call.errors.full_messages }, status: :unprocessable_entity
@@ -103,6 +105,8 @@ module Api
           call.update!(status: :declined)
         end
 
+        CallLogService.create!(call)
+
         payload = {
           type: "call_declined",
           call_session_id: call.id,
@@ -144,7 +148,16 @@ module Api
       def destroy
         call = @conversation.call_sessions.find(params[:id])
         authorize call
-        call.update!(status: :ended)
+
+        unless call.ended?
+          attrs = { status: :ended }
+          # ended_at only set if the call was ever active — unanswered calls have
+          # no started_at, and the model validates started_at presence if ended_at present.
+          attrs[:ended_at] = Time.current if call.started_at.present?
+          call.update!(**attrs)
+          CallLogService.create!(call)
+        end
+
         ActionCable.server.broadcast("call_#{call.id}", { type: "call_ended", call_session_id: call.id })
         render json: { message: "Call ended" }
       end

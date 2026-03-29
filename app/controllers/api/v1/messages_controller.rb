@@ -20,7 +20,7 @@ module Api
       #         render json: MessageBlueprint.render(messages.reverse)
       #       end
       def index
-        messages = @conversation.messages.visible.includes(:user, :reactions).order(created_at: :desc)
+        messages = @conversation.messages.visible.includes(:user, :reactions, :call_session).order(created_at: :desc)
         messages = messages.where("messages.id < ?", params[:cursor]) if params[:cursor]
         page = messages.limit(params.fetch(:limit, 50))
         # next_cursor: id of the oldest message in this page, used for the next request.
@@ -61,7 +61,7 @@ module Api
             "conversation_#{@conversation.id}",
             { type: "new_message", message: MessageBlueprint.render_as_hash(message) }
           )
-          render json: MessageBlueprint.render(message), status: :created
+          render json: { data: MessageBlueprint.render_as_hash(message) }, status: :created
         else
           render json: { errors: message.errors.full_messages },
                   status: :unprocessable_entity
