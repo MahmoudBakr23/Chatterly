@@ -46,9 +46,8 @@ Rails.application.configure do
   # Replace the default in-process memory cache store with a durable alternative.
   config.cache_store = :solid_cache_store
 
-  # Replace the default in-process and non-durable queuing backend for Active Job.
-  config.active_job.queue_adapter = :solid_queue
-  config.solid_queue.connects_to = { database: { writing: :queue } }
+  # Use Sidekiq in production so jobs run on the Fly worker process via Redis.
+  config.active_job.queue_adapter = :sidekiq
 
   # Ignore bad email addresses and do not raise email delivery errors.
   # Set this to true and configure the email server for immediate delivery to raise delivery errors.
@@ -75,6 +74,9 @@ Rails.application.configure do
 
   # Only use :id for inspections in production.
   config.active_record.attributes_for_inspect = [ :id ]
+
+  # Restrict Action Cable WebSocket origins to the deployed frontend.
+  config.action_cable.allowed_request_origins = [ ENV.fetch("FRONTEND_URL") ]
 
   # Enable DNS rebinding protection and other `Host` header attacks.
   # config.hosts = [
