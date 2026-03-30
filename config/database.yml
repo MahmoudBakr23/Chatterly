@@ -55,31 +55,24 @@ production:
     url: <%= ENV["DATABASE_URL"] %>
 
     # ─── READ REPLICA (horizontal scaling for reads) ─────────────────────────
-    # At scale, reads (SELECT) vastly outnumber writes (INSERT/UPDATE/DELETE).
-    # A read replica is a real-time copy of your primary PostgreSQL database
-    # that handles SELECT queries — taking load off the primary, which focuses
-    # on writes only.
+    # Uncomment when DATABASE_REPLICA_URL is provisioned (Supabase paid plan).
+    # Rails will automatically route SELECT → replica, writes → primary.
+    # Without this guard, a nil URL inherits DATABASE_URL via the anchor above,
+    # marking your only database as read-only and silently breaking all writes.
     #
-    # Supabase provides a read replica on paid plans.
-    # When DATABASE_REPLICA_URL is set, Rails automatically routes:
-    #   - SELECT queries → replica
-    #   - INSERT/UPDATE/DELETE → primary
-    # When it's not set (free tier), all queries go to primary. Zero code change.
-    # Replica only activates when DATABASE_REPLICA_URL is explicitly set.
-    # Without this guard, the nil URL inherits DATABASE_URL via the anchor above,
-    # and replica: true marks your only database as read-only — silently breaking all writes.
-<% if ENV["DATABASE_REPLICA_URL"].present? %>
-    replica:
-      <<: *primary_production
-      url: <%= ENV["DATABASE_REPLICA_URL"] %>
-      replica: true
-<% end %>
+    # <% if ENV["DATABASE_REPLICA_URL"].present? %>
+    # replica:
+    #   <<: *primary_production
+    #   url: <%= ENV["DATABASE_REPLICA_URL"] %>
+    #   replica: true
+    # <% end %>
 
-  # Solid Cache uses a separate database so cache churn (constant writes/deletes)
-  # doesn't compete with application data on the same PostgreSQL connection pool.
-  cache:
-    <<: *primary_production
-    # Falls back to DATABASE_URL when no dedicated cache DB is provisioned (free tier).
-    # Solid Cache tables are namespaced so they won't conflict with app tables.
-    url: <%= ENV["CACHE_DATABASE_URL"] || ENV["DATABASE_URL"] %>
-    migrations_paths: db/cache_migrate
+  # ─── SOLID CACHE DATABASE (disabled — using memory_store for now) ──────────
+  # Uncomment when provisioning a dedicated cache DB (e.g. separate Supabase DB).
+  # Also re-enable config.cache_store = :solid_cache_store in production.rb
+  # and run db:prepare:cache (or db:prepare) to create the Solid Cache tables.
+  #
+  # cache:
+  #   <<: *primary_production
+  #   url: <%= ENV["CACHE_DATABASE_URL"] || ENV["DATABASE_URL"] %>
+  #   migrations_paths: db/cache_migrate

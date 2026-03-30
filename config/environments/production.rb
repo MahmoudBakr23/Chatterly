@@ -43,8 +43,9 @@ Rails.application.configure do
   # Don't log any deprecations.
   config.active_support.report_deprecations = false
 
-  # Replace the default in-process memory cache store with a durable alternative.
-  config.cache_store = :solid_cache_store
+  # Use memory cache for now. Switch to :solid_cache_store once a dedicated
+  # CACHE_DATABASE_URL is provisioned and the cache DB config in database.yml is re-enabled.
+  config.cache_store = :memory_store
 
   # Use Sidekiq in production so jobs run on the Fly worker process via Redis.
   config.active_job.queue_adapter = :sidekiq

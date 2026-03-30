@@ -1,13 +1,7 @@
 #!/bin/bash -e
 
-# Initialize the primary database only.
-#
-# db:prepare:primary is used instead of db:prepare to avoid a double-schema-load bug:
-# When CACHE_DATABASE_URL is not set, database.yml points both 'primary' and 'cache'
-# at the same DATABASE_URL. db:prepare runs for each configured database — so structure.sql
-# executes twice on the same DB, failing on the second run with "relation already exists".
-# By scoping to primary we avoid that, and cache migrations (Solid Cache tables) are
-# handled separately when CACHE_DATABASE_URL is actually provisioned.
-./bin/rails db:prepare:primary
+# Prepare the database on every container start: creates if missing, runs pending migrations.
+# Safe to run repeatedly — db:prepare is idempotent.
+./bin/rails db:prepare
 
 exec "${@}"
