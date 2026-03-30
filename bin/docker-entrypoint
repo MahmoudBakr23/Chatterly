@@ -1,8 +1,8 @@
 #!/bin/bash -e
 
-# If running the rails server then create or migrate existing database
-if [ "${@: -2:1}" == "./bin/rails" ] && [ "${@: -1:1}" == "server" ]; then
-  ./bin/rails db:prepare
-fi
+# Create database if it doesn't exist, then run any pending migrations.
+# db:prepare is idempotent — safe to run on every boot, handles first-run and deploys alike.
+# Runs unconditionally so it works regardless of how the server is started.
+./bin/rails db:prepare
 
 exec "${@}"
