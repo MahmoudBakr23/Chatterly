@@ -65,10 +65,15 @@ production:
     #   - SELECT queries → replica
     #   - INSERT/UPDATE/DELETE → primary
     # When it's not set (free tier), all queries go to primary. Zero code change.
+    # Replica only activates when DATABASE_REPLICA_URL is explicitly set.
+    # Without this guard, the nil URL inherits DATABASE_URL via the anchor above,
+    # and replica: true marks your only database as read-only — silently breaking all writes.
+<% if ENV["DATABASE_REPLICA_URL"].present? %>
     replica:
       <<: *primary_production
       url: <%= ENV["DATABASE_REPLICA_URL"] %>
-      replica: true   # tells ActiveRecord this is read-only
+      replica: true
+<% end %>
 
   # Solid Cache uses a separate database so cache churn (constant writes/deletes)
   # doesn't compete with application data on the same PostgreSQL connection pool.
