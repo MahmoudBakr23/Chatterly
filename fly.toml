@@ -6,7 +6,7 @@ primary_region = "iad"
 
 [env]
   RAILS_ENV = "production"
-  HTTP_PORT = "8080"
+  PORT = "8080"
 
 [deploy]
   release_command = "./bin/rails db:migrate"
@@ -20,7 +20,7 @@ primary_region = "iad"
   processes = ["web"]
 
 [processes]
-  web = "./bin/thrust ./bin/rails server"
+  web = "bundle exec rails server -p 8080 -b 0.0.0.0"
   worker = "bundle exec sidekiq"
 
 [[vm]]
