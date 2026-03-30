@@ -1,8 +1,13 @@
 #!/bin/bash -e
 
-# Create database if it doesn't exist, then run any pending migrations.
-# db:prepare is idempotent — safe to run on every boot, handles first-run and deploys alike.
-# Runs unconditionally so it works regardless of how the server is started.
-./bin/rails db:prepare
+# Initialize the primary database only.
+#
+# db:prepare:primary is used instead of db:prepare to avoid a double-schema-load bug:
+# When CACHE_DATABASE_URL is not set, database.yml points both 'primary' and 'cache'
+# at the same DATABASE_URL. db:prepare runs for each configured database — so structure.sql
+# executes twice on the same DB, failing on the second run with "relation already exists".
+# By scoping to primary we avoid that, and cache migrations (Solid Cache tables) are
+# handled separately when CACHE_DATABASE_URL is actually provisioned.
+./bin/rails db:prepare:primary
 
 exec "${@}"
