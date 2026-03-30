@@ -74,5 +74,7 @@ production:
   # doesn't compete with application data on the same PostgreSQL connection pool.
   cache:
     <<: *primary_production
-    url: <%= ENV["CACHE_DATABASE_URL"] %>
+    # Falls back to DATABASE_URL when no dedicated cache DB is provisioned (free tier).
+    # Solid Cache tables are namespaced so they won't conflict with app tables.
+    url: <%= ENV["CACHE_DATABASE_URL"] || ENV["DATABASE_URL"] %>
     migrations_paths: db/cache_migrate
