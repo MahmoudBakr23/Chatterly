@@ -8,9 +8,6 @@ primary_region = "iad"
   RAILS_ENV = "production"
   PORT = "8080"
 
-[deploy]
-  release_command = "./bin/rails db:migrate"
-
 [http_service]
   internal_port = 8080
   force_https = true
