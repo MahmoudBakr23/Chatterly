@@ -8,9 +8,11 @@ gem "pg", "~> 1.1"            # PostgreSQL adapter
 gem "puma", ">= 5.0"          # Web server — handles HTTP + WebSocket connections
 
 # ─── Caching (Rails.cache) ────────────────────────────────────────────────────
-# Solid Cache uses PostgreSQL as a cache store — good for small/medium scale.
-# At millions of users, swap this for Redis (one config line change).
-gem "solid_cache"
+# Solid Cache is disabled until a dedicated cache DB is provisioned.
+# Using :memory_store in production.rb for now.
+# To re-enable: uncomment this gem + the cache: block in database.yml,
+# then run db:prepare to create the Solid Cache tables.
+# gem "solid_cache"
 
 # ─── Background Jobs ──────────────────────────────────────────────────────────
 # Sidekiq: Redis-backed job queue. Industry standard for high-throughput Rails apps.
