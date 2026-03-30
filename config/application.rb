@@ -41,6 +41,11 @@ module ChatterlyApi
     # Skip views, helpers and assets when generating a new resource.
     config.api_only = true
 
+    # Use SQL structure dump instead of schema.rb.
+    # schema.rb cannot represent PostgreSQL-native partitioned tables (PARTITION BY RANGE).
+    # structure.sql dumps raw SQL so the messages partition is recreated exactly.
+    config.active_record.schema_format = :sql
+
     # Devise/Warden internally calls set_user after sign-in, which tries to
     # serialize the user into the session — even in JWT mode. Without a session
     # store Rails API mode raises DisabledSessionError. We add the cookie +
