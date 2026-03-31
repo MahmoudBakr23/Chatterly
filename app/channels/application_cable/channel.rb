@@ -20,16 +20,6 @@ module ApplicationCable
     # Why Redis INCR?
     #   INCR is atomic — even with 1000 concurrent requests, the count is exact.
     #   No race conditions, no locking needed. This is Redis doing what it's built for.
-    # TODO: def rate_limit!(action:, limit:, window:)
-    #         key   = "rate_limit:#{action}:#{current_user.id}"
-    #         count = redis.incr(key)
-    #         # Set TTL only on first increment — don't reset the window on each hit
-    #         redis.expire(key, window) if count == 1
-    #         if count > limit
-    #           transmit({ error: "rate_limit", message: "Too many #{action} requests. Slow down." })
-    #           throw :abort
-    #         end
-    #       end
     def rate_limit!(action:, limit:, window:)
       key   = "rate_limit:#{action}:#{current_user.id}"
       count = redis.incr(key)
@@ -41,9 +31,6 @@ module ApplicationCable
       end
     end
     # Shared Redis connection for all channels (logical DB /3 — same as JWT + presence).
-    # TODO: def redis
-    #         @redis ||= Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/3"))
-    #       end
     def redis
       @redis ||= Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/3"))
       # A: No — in staging/production, REDIS_URL is set to the Upstash URL (e.g. rediss://...@...upstash.io:6379).

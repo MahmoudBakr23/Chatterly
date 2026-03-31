@@ -29,18 +29,6 @@ module Api
 
       # Called by Devise after create — resource is the new User.
       # resource.persisted? is true if save succeeded, false if validation failed.
-      #
-      # TODO: def respond_with(resource, _opts = {})
-      #         if resource.persisted?
-      #           render json: {
-      #             message: "Registered successfully",
-      #             user: UserBlueprint.render_as_hash(resource, view: :with_email)
-      #           }, status: :created
-      #         else
-      #           render json: { errors: resource.errors.full_messages },
-      #                  status: :unprocessable_entity
-      #         end
-      #       end
       def respond_with(resource, _opts = {})
         if resource.persisted?
           render json: {

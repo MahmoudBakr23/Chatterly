@@ -10,14 +10,8 @@ class UserBlueprint < Blueprinter::Base
 
   # ─── default / :public view ───────────────────────────────────────────────
   # Shown when displaying another user — no private fields.
-  #
-  # TODO: fields :username, :display_name, :avatar_url
   fields :username, :display_name, :avatar_url
-  # TODO: field :online do |user|
-  #         # Check Redis for presence key — true if the TTL key exists
-  #         redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/3"))
-  #         redis.exists?("presence:#{user.id}")
-  #       end
+  # Check Redis for presence key — true if the TTL key exists
   field :online do |user|
     redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/3"))
     redis.exists?("presence:#{user.id}")
@@ -31,10 +25,6 @@ class UserBlueprint < Blueprinter::Base
   # ─── :with_email view ─────────────────────────────────────────────────────
   # Used in /users/me, login response, and registration response.
   # Includes all default fields plus private fields.
-  #
-  # TODO: view :with_email do
-  #         fields :email, :last_seen_at
-  #       end
   view :with_email do
     fields :email, :last_seen_at
   end

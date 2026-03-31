@@ -6,7 +6,6 @@ class CreateReactions < ActiveRecord::Migration[8.1]
       # partitioned message row — we also need created_at (the partition key).
       # We store message_created_at here so we can query the right partition
       # without doing a full table scan across all partitions.
-      # TODO: add t.references :message, null: false, foreign_key: false, index: true
       t.references :message, null: false, foreign_key: false, index: false
       # (foreign_key: false because FK constraints on partitioned tables are limited)
       # What's that supposed to mean? Isn't the message_id is the FK to the messages table?
@@ -24,15 +23,12 @@ class CreateReactions < ActiveRecord::Migration[8.1]
       # index: false — the composite unique index [message_id, user_id, emoji] below
       # already has message_id as its leftmost column, so it covers message_id-only
       # lookups ("get all reactions for message X") with zero extra index needed.
-      # TODO: add t.datetime :message_created_at, null: false
       t.datetime :message_created_at, null: false
       # ─── Who reacted ────────────────────────────────────────────────────────
-      # TODO: add t.references :user, null: false, foreign_key: true, index: true
       t.references :user, null: false, foreign_key: true, index: true
       # ─── The reaction itself ─────────────────────────────────────────────────
       # Stored as the emoji character itself ("👍") not a code (":thumbsup:").
       # Keeps it simple, frontend-agnostic, and future-proof.
-      # TODO: add t.string :emoji, null: false
       t.string :emoji, null: false
       t.timestamps null: false
     end
@@ -41,7 +37,6 @@ class CreateReactions < ActiveRecord::Migration[8.1]
     # One user can only react with the same emoji once per message.
     # Composite unique index enforces this at the DB level.
     # The model also validates this, but the DB index is the race-condition guard.
-    # TODO: add_index :reactions, [:message_id, :user_id, :emoji], unique: true
     add_index :reactions, [ :message_id, :user_id, :emoji ], unique: true
   end
 end

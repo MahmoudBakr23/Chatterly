@@ -13,8 +13,8 @@
 
 Rails.application.config.middleware.insert_before 0, Rack::Cors do
   allow do
-    # TODO: Add your production domain here when deploying
-    # e.g. "https://chatterly.vercel.app"
+    # Set FRONTEND_URL in your environment to your deployed domain.
+    # e.g. FRONTEND_URL=https://chatterly.vercel.app
     origins ENV.fetch("FRONTEND_URL", "http://localhost:3000")
 
     resource "*",

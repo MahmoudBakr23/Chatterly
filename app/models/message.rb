@@ -1,12 +1,9 @@
 class Message < ApplicationRecord
   # ─── Associations ───────────────────────────────────────────────────────────
-  # TODO: belongs_to :conversation
-  # TODO: belongs_to :user
   belongs_to :conversation
   belongs_to :user
   # parent_message: self-referential association for threads.
   # optional: true because top-level messages have no parent.
-  # TODO: belongs_to :parent_message, class_name: "Message", optional: true
   belongs_to :parent_message, class_name: "Message", optional: true
   # What is this parent_message thing, please answer with a practical example briefly!
   # [Claude] It's for threaded replies — like Slack threads. Example:
@@ -14,7 +11,6 @@ class Message < ApplicationRecord
   # Message #2 (id: 2): "Yes, give me 5 mins!"    → parent_message_id: 1   (reply to #1)
   # Message #3 (id: 3): "Same!"                   → parent_message_id: 1   (reply to #1)
   # Messages #2 and #3 are grouped under #1 in the UI as a thread.
-  # TODO: has_many :reactions, dependent: :destroy
   has_many :reactions, dependent: :destroy
   # call_session: present only on call-type messages. The call log message is
   # attributed to the initiator and carries the session for duration/status/type.
@@ -26,9 +22,6 @@ class Message < ApplicationRecord
   enum :message_type, { text: 0, image: 1, file: 2, call: 3 }, scopes: false
 
   # ─── Validations ────────────────────────────────────────────────────────────
-  # TODO: validates :body, presence: true, length: { maximum: 4000 }
-  # TODO: validates :conversation_id, presence: true
-  # TODO: validates :user_id, presence: true
   validates :content, presence: true, length: { maximum: 4000 }
   validates :conversation_id, presence: true
   validates :user_id, presence: true
@@ -38,19 +31,13 @@ class Message < ApplicationRecord
   #
   # At scale, nearly every query goes through the visible scope.
   # The partial index on deleted_at IS NOT NULL makes the deleted scope fast too.
-  # TODO: scope :visible, -> { where(deleted_at: nil) }
-  # TODO: scope :deleted, -> { where.not(deleted_at: nil) }
   scope :visible, -> { where(deleted_at: nil) }
   scope :deleted, -> { where.not(deleted_at: nil) }
   # recent: newest messages first. Used in API responses for chat history.
-  # TODO: scope :recent, -> { order(created_at: :desc) }
   scope :recent, -> { order(created_at: :desc) }
   # ─── Instance methods ───────────────────────────────────────────────────────
   # deleted? checks if this specific message has been soft-deleted.
   # Used in serializers to decide what to render (e.g. "[message deleted]").
-  # TODO: def deleted?
-  #         deleted_at.present?
-  #       end
   def deleted?
     deleted_at.present?
   end
@@ -60,9 +47,6 @@ class Message < ApplicationRecord
   #   2. Audit trail — moderation needs to see what was said.
   #   3. Partition safety — partitioned tables make cascading deletes expensive.
   # touch: false prevents updating updated_at (soft delete isn't an edit).
-  # TODO: def soft_delete!
-  #         update_columns(deleted_at: Time.current)
-  #       end
   def soft_delete!
     update_columns(deleted_at: Time.current)
   end

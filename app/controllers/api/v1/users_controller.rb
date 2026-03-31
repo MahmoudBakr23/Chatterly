@@ -6,12 +6,6 @@ module Api
       # GET /api/v1/users?search=alice
       # Returns users matching the search query.
       # Pundit: any authenticated user can search — no policy check needed here.
-      #
-      # TODO: def index
-      #         users = User.where("username ILIKE :q OR display_name ILIKE :q",
-      #                            q: "%#{params[:search]}%")
-      #         render json: UserBlueprint.render(users, view: :public)
-      #       end
       def index
         users = User.where("username ILIKE :q OR display_name ILIKE :q",
                             q: "%#{params[:search]}%")
@@ -22,10 +16,6 @@ module Api
       # GET /api/v1/users/me
       # Returns the current user's full profile including email.
       # current_user is set by Devise from the JWT (via BaseController#authenticate_user!).
-      #
-      # TODO: def me
-      #         render json: UserBlueprint.render(current_user, view: :with_email)
-      #       end
       def me
         render json: UserBlueprint.render(current_user, view: :with_email)
       end
@@ -34,11 +24,6 @@ module Api
       # GET /api/v1/users/:id
       # Returns a user's public profile (no email).
       # .find raises RecordNotFound → caught by ApplicationController → 404.
-      #
-      # TODO: def show
-      #         user = User.find(params[:id])
-      #         render json: UserBlueprint.render(user, view: :public)
-      #       end
       def show
         render json: UserBlueprint.render(@user, view: :public)
       end
@@ -46,17 +31,6 @@ module Api
       # ─── update ─────────────────────────────────────────────────────────────
       # PATCH /api/v1/users/:id
       # Update display_name or avatar_url. Pundit blocks editing other users.
-      #
-      # TODO: def update
-      #         user = User.find(params[:id])
-      #         authorize user
-      #         if user.update(user_params)
-      #           render json: UserBlueprint.render(user, view: :with_email)
-      #         else
-      #           render json: { errors: user.errors.full_messages },
-      #                  status: :unprocessable_entity
-      #         end
-      #       end
       def update
         authorize @user
         if @user.update(user_params)
@@ -70,10 +44,6 @@ module Api
 
       # Strong params — only allow fields the user is allowed to self-update.
       # Email and username changes are intentionally excluded (bigger flow needed).
-      #
-      # TODO: def user_params
-      #         params.require(:user).permit(:display_name, :avatar_url)
-      #       end
       def user_params
         params.require(:user).permit(:display_name, :avatar_url)
       end

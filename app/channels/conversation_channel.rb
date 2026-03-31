@@ -16,11 +16,6 @@ class ConversationChannel < ApplicationCable::Channel
   # the frontend: consumer.subscriptions.create({ channel: "ConversationChannel",
   #                                               conversation_id: 1 })
   # We verify membership before streaming — no leaking private conversations.
-  # TODO: def subscribed
-  #         conversation = Conversation.find_by(id: params[:conversation_id])
-  #         return reject unless conversation && member?(conversation)
-  #         stream_from "conversation_#{conversation.id}"
-  #       end
   def subscribed
     conversation = Conversation.find_by(id: params[:conversation_id])
     return reject unless conversation && member?(conversation)
@@ -29,9 +24,6 @@ class ConversationChannel < ApplicationCable::Channel
   # ─── Unsubscribed ───────────────────────────────────────────────────────────
   # Called when the client unsubscribes or disconnects.
   # stop_all_streams cleans up Redis subscriptions for this channel instance.
-  # TODO: def unsubscribed
-  #         stop_all_streams
-  #       end
   def unsubscribed
     stop_all_streams
   end
@@ -77,9 +69,6 @@ class ConversationChannel < ApplicationCable::Channel
 
   # member? checks if the current_user is a member of the conversation.
   # Prevents users from subscribing to conversations they don't belong to.
-  # TODO: def member?(conversation)
-  #         conversation.members.exists?(current_user.id)
-  #       end
   def member?(conversation)
     conversation.members.exists?(current_user.id)
   end

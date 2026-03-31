@@ -12,8 +12,6 @@ class User < ApplicationRecord
   # jwt_revocation_strategy: tells devise-jwt HOW to revoke tokens on logout.
   # We use a custom Redis strategy (JwtDenylist) instead of a DB table —
   # Redis stores the revoked JTI with a TTL matching the token expiry.
-  # TODO: update the devise line below to include :lockable and :jwt_authenticatable
-  # with jwt_revocation_strategy: JwtDenylist
   devise :database_authenticatable, :registerable,
          :recoverable, :rememberable, :validatable,
          :lockable, :jwt_authenticatable, jwt_revocation_strategy: JwtDenylist
@@ -23,11 +21,6 @@ class User < ApplicationRecord
   # At scale, this would be a background job instead — destroying a user with
   # millions of messages should not happen in a single synchronous transaction.
   # For now, dependent: :destroy is correct for our scope.
-
-  # TODO: has_many :conversation_members, dependent: :destroy
-  # TODO: has_many :conversations, through: :conversation_members
-  # TODO: has_many :messages, dependent: :destroy
-  # TODO: has_many :reactions, dependent: :destroy
   has_many :conversation_members, dependent: :destroy
   has_many :conversations, through: :conversation_members
   # created_conversations: all conversations this user created (created_by_id FK).
@@ -40,9 +33,6 @@ class User < ApplicationRecord
 
   # initiated_calls and call_participations need explicit class_name because
   # the association name doesn't match the model name (same pattern as created_by)
-  # TODO: has_many :initiated_calls, class_name: "CallSession",
-  #               foreign_key: :initiator_id, dependent: :destroy
-  # TODO: has_many :call_participations, class_name: "CallParticipant", dependent: :destroy
   has_many :initiated_calls, class_name: "CallSession",
            foreign_key: "initiator_id", dependent: :destroy
   has_many :call_participations, class_name: "CallParticipant", dependent: :destroy
@@ -50,19 +40,12 @@ class User < ApplicationRecord
   # ─── Validations ────────────────────────────────────────────────────────────
   # :validatable (Devise) already validates email format and password length.
   # These are additional validations specific to our app.
-
-  # TODO: validates :username, presence: true,
-  #                            uniqueness: { case_sensitive: false },
-  #                            format: { with: /\A[a-z0-9_]+\z/,
-  #                                      message: "only lowercase letters, numbers, and underscores" },
-  #                            length: { minimum: 3, maximum: 30 }
   validates :username, presence: true,
                         uniqueness: { case_sensitive: false },
                         format: { with: /\A[a-z0-9_]+\z/,
                                   message: "only lowercase letters, numbers, and underscores" },
                         length: { minimum: 3, maximum: 30 }
   # display_name is optional — if blank, the UI falls back to username
-  # TODO: validates :display_name, length: { maximum: 50 }, allow_blank: true
   validates :display_name, length: { maximum: 50 }, allow_blank: true
   # ─── Callbacks ──────────────────────────────────────────────────────────────
   # Normalize username to lowercase BEFORE validation, not before_save.
@@ -76,25 +59,18 @@ class User < ApplicationRecord
   #
   # online scope: users whose last_seen_at is within the last 5 minutes.
   # The index on last_seen_at (from migration) makes this query fast.
-  # TODO: scope :online, -> { where(last_seen_at: 5.minutes.ago..) }
   # Note: 5.minutes.ago.. is a Ruby endless range (5 min ago → now)
   scope :online, -> { where(last_seen_at: 5.minutes.ago..) }
   # ─── Instance methods ───────────────────────────────────────────────────────
   # online? is the per-user predicate version of the scope above.
   # Used in serializers: { id: 1, username: "alice", online: user.online? }
   # Redis is the fast path — checked first. PostgreSQL is the fallback.
-  # TODO: def online?
-  #         last_seen_at.present? && last_seen_at > 5.minutes.ago
-  #       end
   def online?
     last_seen_at.present? && last_seen_at > 5.minutes.ago
   end
 
   private
 
-  # TODO: def downcase_username
-  #         self.username = username.downcase if username.present?
-  #       end
   def downcase_username
     self.username = username.downcase if username.present?
   end

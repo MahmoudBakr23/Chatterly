@@ -19,20 +19,12 @@ module Api
 
       # respond_with is called on successful login.
       # The JWT is already in the response header at this point — we only control the body.
-      #
-      # TODO: def respond_with(resource, _opts = {})
-      #         render json: { user: UserBlueprint.render_as_hash(resource, view: :with_email) }
-      #       end
       def respond_with(resource, _opts = {})
         render json: { user: UserBlueprint.render_as_hash(resource, view: :with_email) }
       end
 
       # respond_to_on_destroy is called after logout.
       # By this point the JWT is already in the Redis denylist — it can never be used again.
-      #
-      # TODO: def respond_to_on_destroy
-      #         render json: { message: "Logged out successfully" }
-      #       end
       def respond_to_on_destroy
         render json: { message: "Logged out successfully" }
       end

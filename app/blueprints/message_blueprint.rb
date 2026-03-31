@@ -36,15 +36,9 @@ class MessageBlueprint < Blueprinter::Base
       initiator_id: cs.initiator_id
     }
   end
-  # TODO: field :user do |message|
-  #         UserBlueprint.render_as_hash(message.user, view: :public)
-  #       end
   field :user do |message|
     UserBlueprint.render_as_hash(message.user, view: :public)
   end
-  # TODO: field :reactions do |message|
-  #         ReactionBlueprint.render_as_hash(message.reactions)
-  #       end
   field :reactions do |message|
     ReactionBlueprint.render_as_hash(message.reactions)
   end
