@@ -20,6 +20,7 @@ gem "puma", ">= 5.0"          # Web server — handles HTTP + WebSocket connecti
 # Alternative was Solid Queue (PostgreSQL-backed) but it doesn't match Sidekiq's
 # throughput at scale — Sidekiq can process millions of jobs/day on a single worker.
 gem "sidekiq", "~> 7.0"
+gem "sidekiq-cron", "~> 2.0"  # Recurring scheduled jobs on top of Sidekiq
 
 # ─── Real-time / WebSockets ───────────────────────────────────────────────────
 # Action Cable is built into Rails — no gem needed.

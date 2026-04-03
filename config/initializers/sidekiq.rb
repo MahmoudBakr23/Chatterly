@@ -33,6 +33,18 @@ Sidekiq.configure_server do |config|
   # More threads = more jobs processed simultaneously = more Redis + DB connections.
   # Free tier: keep at 5. Production: scale with available CPU/RAM.
   config.concurrency = ENV.fetch("SIDEKIQ_CONCURRENCY", 5).to_i
+
+  # Scheduled jobs — registered once when the Sidekiq server boots.
+  # Runs on the 25th of each month at 00:00 UTC, creating next month's
+  # messages partition before the 1st rolls over.
+  config.on(:startup) do
+    Sidekiq::Cron::Job.load_from_hash(
+      "create_message_partition" => {
+        "cron"  => "0 0 25 * *",
+        "class" => "CreateMessagePartitionJob"
+      }
+    )
+  end
 end
 
 Sidekiq.configure_client do |config|
